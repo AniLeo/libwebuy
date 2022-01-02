@@ -30,6 +30,20 @@ class category
 		               $this->categoryFriendlyName,
 		               $this->totalBoxes);
 	}
+
+	/** @param array<category> $array **/
+	public static function IDsToString(array $array) : string
+	{
+		$ret = '[';
+
+		foreach ($array as $category)
+			$ret .= $category->categoryId.',';
+
+		$ret = substr($ret, 0, -1);
+		$ret .= ']';
+
+		return $ret;
+	}
 }
 
 ?>

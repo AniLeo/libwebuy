@@ -26,6 +26,20 @@ class productLine
 		               $this->productLineName,
 		               $this->totalCategories);
 	}
+
+	/** @param array<productLine> $array **/
+	public static function IDsToString(array $array) : ?string
+	{
+		$ret = '[';
+
+		foreach ($array as $productline)
+			$ret .= $productline->productLineId.',';
+
+		$ret = substr($ret, 0, -1);
+		$ret .= ']';
+
+		return $ret;
+	}
 }
 
 ?>
