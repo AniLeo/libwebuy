@@ -1,21 +1,23 @@
 <?php
 
-class superCat {
+class superCat
+{
+	public int    $superCatId;            // Int
+	public string $superCatFriendlyName;  // String
 
-	public $superCatId;            // Int
-	public $superCatFriendlyName;  // String
-
-	function __construct(int $superCatId, string $superCatFriendlyName)
+	function __construct(int    $superCatId,
+	                     string $superCatFriendlyName)
 	{
-		$this->superCatId = $superCatId;
+		$this->superCatId           = $superCatId;
 		$this->superCatFriendlyName = $superCatFriendlyName;
 	}
 
 	function __toString() : string
 	{
-		return "[{$this->superCatId}] {$this->superCatFriendlyName}";
+		return sprintf("[%d] %s",
+		               $this->superCatId,
+		               $this->superCatFriendlyName);
 	}
-
 }
 
 ?>

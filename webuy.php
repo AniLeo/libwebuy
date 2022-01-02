@@ -6,14 +6,12 @@ include_once "box.php";
 
 class Webuy
 {
-	// Throws exceptions on null returns
-	public $debug = false;
-	// Shared cURL resource
-	public $cr = null;
+	public bool       $debug = false; // Throws exceptions on null returns
+	public CurlHandle $cr;            // Shared cURL resource
 
 	function __construct(bool $debug = false)
 	{
-		$this->cr = curl_init();
+		$this->cr    = curl_init();
 		$this->debug = $debug;
 	}
 
@@ -22,12 +20,13 @@ class Webuy
 		curl_close($this->cr);
 	}
 
-	// ret: String (null)
 	public function getURL(string $country) : ?string
 	{
 		// Subdomain validity check
 		$allowed = ["uk", "pt", "es"];
-		if (!in_array($country, $allowed)) {
+
+		if (!in_array($country, $allowed))
+		{
 			if ($this->debug) throw new Exception("Debug: Null return");
 			return null;
 		}
@@ -35,15 +34,9 @@ class Webuy
 		return "https://wss2.cex.{$country}.webuy.io/v3/";
 	}
 
-	// ret: [String, int] (null)
+	/** @return array<String|int> **/
 	public function curlURL(string $url) : ?array
 	{
-		// No valid cURL resource
-		if (is_null($this->cr)) {
-			if ($this->debug) throw new Exception("Debug: Null return");
-			return null;
-		}
-
 		// Return result as raw output
 		curl_setopt($this->cr, CURLOPT_RETURNTRANSFER, true);
 		// Point cURL resource to the URL
@@ -52,6 +45,13 @@ class Webuy
 		curl_setopt($this->cr, CURLOPT_ENCODING, "gzip");
 
 		$ret["result"] = curl_exec($this->cr);
+
+		if (is_bool($ret["result"]) || curl_errno($this->cr))
+		{
+			if ($this->debug) throw new Exception("Debug: cURL execution failed");
+			return null;
+		}
+
 		$ret["httpcode"] = curl_getinfo($this->cr, CURLINFO_HTTP_CODE);
 
 		// Reset given cURL resource after usage
@@ -60,13 +60,15 @@ class Webuy
 		return $ret;
 	}
 
-	// ret: Associative Array (null)
+	/** @return array<Object> **/
 	public function callAPI(string $country, string $endpoint) : ?array
 	{
 		global $profiler;
 
 		$url = $this->getURL($country);
-		if (is_null($url)) {
+
+		if (is_null($url))
+		{
 			if ($this->debug) throw new Exception("Debug: Null return");
 			return null;
 		}
@@ -79,19 +81,28 @@ class Webuy
 
 		$result = $this->curlURL($url);
 
-		if ($result["httpcode"] !== 200) {
+		if ($result["httpcode"] !== 200)
+		{
 			if ($this->debug) throw new Exception("Debug: Null return ({$result["httpcode"]})");
 			return null;
 		}
 
-		$json = json_decode($result["result"], true);
+		$json = json_decode((string) $result["result"], true);
 
-		if ($json["response"]["ack"] !== "Success") {
+		if (!$json)
+		{
+			if ($this->debug) throw new Exception("Debug: JSON decoding failed");
+			return null;
+		}
+
+		if ($json["response"]["ack"] !== "Success")
+		{
 			if ($this->debug) throw new Exception("Debug: Null return ({$json["response"]["ack"]})");
 			return null;
 		}
 
-		if (!empty($json["response"]["error"]["code"])) {
+		if (!empty($json["response"]["error"]["code"]))
+		{
 			if ($this->debug) throw new Exception("Debug: Null return ({$json["response"]["error"]["code"]})");
 			return null;
 		}
@@ -102,74 +113,90 @@ class Webuy
 		return $json;
 	}
 
-	// ret: superCat[] (null)
+	/** @return array<Object> **/
 	public function getSuperCats(string $country) : ?array
 	{
 		$json = $this->callAPI($country, "supercats");
 
-		if (is_null($json)) {
+		if (is_null($json))
+		{
 			if ($this->debug) throw new Exception("Debug: Null return");
 			return null;
 		}
 
 		$a_superCat = array();
 
-		foreach ($json["response"]["data"]["superCats"] as $id => $array) {
-			$a_superCat[$array["superCatId"]] = new superCat($array["superCatId"], $array["superCatFriendlyName"]);
+		foreach ($json["response"]["data"]["superCats"] as $id => $array)
+		{
+			$a_superCat[$array["superCatId"]] = new superCat($array["superCatId"],
+			                                                 $array["superCatFriendlyName"]);
 		}
 
 		return $a_superCat;
 	}
 
-	// ret: productLine[] (null)
+	/** @return array<Object> **/
 	public function getProductLines(string $country) : ?array
 	{
 		$json = $this->callAPI($country, "productlines");
 
-		if (is_null($json)) {
+		if (is_null($json))
+		{
 			if ($this->debug) throw new Exception("Debug: Null return");
 			return null;
 		}
 
 		$a_productLine = array();
 
-		foreach ($json["response"]["data"]["productLines"] as $id => $array) {
-			$a_productLine[$array["productLineId"]] = new productLine($array["superCatId"], $array["productLineId"], $array["productLineName"], $array["totalCategories"]);
+		foreach ($json["response"]["data"]["productLines"] as $id => $array)
+		{
+			$a_productLine[$array["productLineId"]] = new productLine($array["superCatId"],
+			                                                          $array["productLineId"],
+			                                                          $array["productLineName"],
+			                                                          $array["totalCategories"]);
 		}
 
 		return $a_productLine;
 	}
 
-	// ret: category[] (null)
+	/** @return array<Object> **/
 	public function getCategories(string $country, string $search) : ?array
 	{
 		$json = $this->callAPI($country, "categories?{$search}");
 
-		if (is_null($json)) {
+		if (is_null($json))
+		{
 			if ($this->debug) throw new Exception("Debug: Null return");
 			return null;
 		}
 
 		$a_productLine = array();
 
-		foreach ($json["response"]["data"]["categories"] as $id => $array) {
-			$a_productLine[$array["categoryId"]] = new category($array["superCatId"], $array["categoryId"], $array["categoryFriendlyName"], $array["productLineId"], $array["totalBoxes"]);
+		foreach ($json["response"]["data"]["categories"] as $id => $array)
+		{
+			$a_productLine[$array["categoryId"]] = new category($array["superCatId"],
+			                                                    $array["categoryId"],
+			                                                    $array["categoryFriendlyName"],
+			                                                    $array["productLineId"],
+			                                                    $array["totalBoxes"]);
 		}
 
 		return $a_productLine;
 	}
 
-	// ret: box[] (null)
+	/** @return array<Object> **/
 	public function getBoxes(string $country, string $search) : ?array
 	{
 		$a_boxes = array();
 		$size = 50;
 
-		for ($i = 1; $i < $size; $i += 50) {
+		for ($i = 1; $i < $size; $i += 50)
+		{
 			$url = "boxes?{$search}&firstRecord={$i}&count=50&sortBy=boxname&sortOrder=asc";
 			$json = $this->callAPI($country, $url);
 
-			if (is_null($json)) {
+			if (is_null($json))
+			{
 				if ($this->debug) throw new Exception("Debug: Null return");
 				return null;
 			}
@@ -181,16 +208,28 @@ class Webuy
 			$size = $json["response"]["data"]["totalRecords"];
 
 			// Missing size variable
-			if (!is_int($size) || $size < 0) {
+			if (!is_int($size) || $size < 0)
+			{
 				if ($this->debug) throw new Exception("Debug: Null return");
 				return null;
 			}
 
-			foreach ($json["response"]["data"]["boxes"] as $id => $array) {
-				$a_boxes[$array["boxId"]] = new box($array["boxId"], $array["boxName"], $array["categoryId"],
-					$array["categoryName"], $array["superCatId"], $array["superCatName"],
-					$array["cannotBuy"], $array["isNewBox"], $array["sellPrice"], $array["cashPrice"],
-					$array["exchangePrice"], $array["boxRating"], $array["outOfStock"], $array["ecomQuantityOnHand"]);
+			foreach ($json["response"]["data"]["boxes"] as $id => $array)
+			{
+				$a_boxes[$array["boxId"]] = new box($array["boxId"],
+				                                    $array["boxName"],
+				                                    $array["categoryId"],
+				                                    $array["categoryName"],
+				                                    $array["superCatId"],
+				                                    $array["superCatName"],
+				                                    $array["cannotBuy"],
+				                                    $array["isNewBox"],
+				                                    $array["sellPrice"],
+				                                    $array["cashPrice"],
+				                                    $array["exchangePrice"],
+				                                    $array["boxRating"],
+				                                    $array["outOfStock"],
+				                                    $array["ecomQuantityOnHand"]);
 			}
 
 		}
@@ -198,26 +237,37 @@ class Webuy
 		return $a_boxes;
 	}
 
-	// ret: box (null)
-	public function getBox(string $country, string $boxId)
+	public function getBox(string $country, string $boxId) : ?box
 	{
 		$url = "boxes/{$boxId}/detail";
 		$json = $this->callAPI($country, $url);
 
-		if (is_null($json)) {
+		if (is_null($json))
+		{
 			if ($this->debug) throw new Exception("Debug: Null return");
 			return null;
 		}
 
 		$array = $json["response"]["data"]["boxDetails"][0];
 
-		return new box($array["boxId"], $array["boxName"], $array["categoryId"], $array["categoryName"],
-			$array["superCatId"], $array["superCatName"], $array["cannotBuy"],
-			$array["isNewBox"], $array["sellPrice"], $array["cashPrice"],
-			$array["exchangePrice"], $array["boxRating"], $array["outOfStock"], $array["ecomQuantityOnHand"]);
+		return new box($array["boxId"],
+		               $array["boxName"],
+		               $array["categoryId"],
+		               $array["categoryName"],
+		               $array["superCatId"],
+		               $array["superCatName"],
+		               $array["cannotBuy"],
+		               $array["isNewBox"],
+		               $array["sellPrice"],
+		               $array["cashPrice"],
+		               $array["exchangePrice"],
+		               $array["boxRating"],
+		               $array["outOfStock"],
+		               $array["ecomQuantityOnHand"]);
 	}
 
-	public function getStores(string $country, string $boxId)
+	/** @return array<String, array<Object>> **/
+	public function getStores(string $country, string $boxId) : ?array
 	{
 		// Supported countries
 		if ($country !== "pt")
@@ -255,7 +305,7 @@ class Webuy
 				if (isset($ret[$store["storeName"]]))
 					continue;
 
-				$ret[$store["storeName"]] = array(
+				$ret[(string) $store["storeName"]] = array(
 					"storeId" => $store["storeId"],
 					"storeName" => $store["storeName"],
 					"quantityOnHand" => $store["quantityOnHand"]
