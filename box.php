@@ -13,24 +13,24 @@ class box
 	public float  $sellPrice;            // Float / Int
 	public float  $cashPrice;            // Float / Int
 	public float  $exchangePrice;        // Float / Int
-	public float  $boxRating;            // Float / Int
+	public ?float $boxRating;            // Float / Int / Null
 	public int    $outOfStock;           // Int
 	public int    $ecomQuantityOnHand;   // Int
 
-	function __construct(string    $boxId,
-	                     string    $boxName,
-	                     int       $categoryId,
-	                     string    $categoryName,
-	                     int       $superCatId,
-	                     string    $superCatName,
-	                     int       $cannotBuy,
-	                     int       $isNewBox,
-	                     float|int $sellPrice,
-	                     float|int $cashPrice,
-	                     float|int $exchangePrice,
-	                     float|int $boxRating,
-	                     int       $outOfStock,
-	                     int       $ecomQuantityOnHand)
+	function __construct(string         $boxId,
+	                     string         $boxName,
+	                     int            $categoryId,
+	                     string         $categoryName,
+	                     int            $superCatId,
+	                     string         $superCatName,
+	                     int            $cannotBuy,
+	                     int            $isNewBox,
+	                     float|int      $sellPrice,
+	                     float|int      $cashPrice,
+	                     float|int      $exchangePrice,
+	                     float|int|null $boxRating,
+	                     int            $outOfStock,
+	                     int            $ecomQuantityOnHand)
 	{
 		$this->boxId              = $boxId;
 		$this->boxName            = $boxName;
