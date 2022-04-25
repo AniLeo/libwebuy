@@ -81,6 +81,12 @@ class Webuy
 
 		$result = $this->curlURL($url);
 
+		if (is_null($result))
+		{
+			if ($this->debug) throw new Exception("Debug: Null result");
+			return null;
+		}
+
 		if ($result["httpcode"] !== 200)
 		{
 			if ($this->debug) throw new Exception("Debug: Null return ({$result["httpcode"]})");
