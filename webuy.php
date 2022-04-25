@@ -34,7 +34,7 @@ class Webuy
 		return "https://wss2.cex.{$country}.webuy.io/v3/";
 	}
 
-	/** @return array<String|int> **/
+	/** @return array<string, string|int> **/
 	public function curlURL(string $url) : ?array
 	{
 		// Return result as raw output
@@ -60,7 +60,7 @@ class Webuy
 		return $ret;
 	}
 
-	/** @return array<Object> **/
+	/** @return array<mixed> **/
 	public function callAPI(string $country, string $endpoint) : ?array
 	{
 		global $profiler;
@@ -113,7 +113,7 @@ class Webuy
 		return $json;
 	}
 
-	/** @return array<Object> **/
+	/** @return array<int, superCat> **/
 	public function getSuperCats(string $country) : ?array
 	{
 		$json = $this->callAPI($country, "supercats");
@@ -128,6 +128,7 @@ class Webuy
 
 		foreach ($json["response"]["data"]["superCats"] as $id => $array)
 		{
+			$array["superCatId"] = (int) $array["superCatId"];
 			$a_superCat[$array["superCatId"]] = new superCat($array["superCatId"],
 			                                                 $array["superCatFriendlyName"]);
 		}
@@ -135,7 +136,7 @@ class Webuy
 		return $a_superCat;
 	}
 
-	/** @return array<Object> **/
+	/** @return array<int, productLine> **/
 	public function getProductLines(string $country) : ?array
 	{
 		$json = $this->callAPI($country, "productlines");
@@ -150,6 +151,7 @@ class Webuy
 
 		foreach ($json["response"]["data"]["productLines"] as $id => $array)
 		{
+			$array["productLineId"] = (int) $array["productLineId"];
 			$a_productLine[$array["productLineId"]] = new productLine($array["superCatId"],
 			                                                          $array["productLineId"],
 			                                                          $array["productLineName"],
@@ -159,7 +161,7 @@ class Webuy
 		return $a_productLine;
 	}
 
-	/** @return array<Object> **/
+	/** @return array<int, category> **/
 	public function getCategories(string $country, string $search) : ?array
 	{
 		$json = $this->callAPI($country, "categories?{$search}");
@@ -174,6 +176,7 @@ class Webuy
 
 		foreach ($json["response"]["data"]["categories"] as $id => $array)
 		{
+			$array["categoryId"] = (int) $array["categoryId"];
 			$a_productLine[$array["categoryId"]] = new category($array["superCatId"],
 			                                                    $array["categoryId"],
 			                                                    $array["categoryFriendlyName"],
@@ -184,7 +187,7 @@ class Webuy
 		return $a_productLine;
 	}
 
-	/** @return array<Object> **/
+	/** @return array<string, box> **/
 	public function getBoxes(string $country, string $search) : ?array
 	{
 		$a_boxes = array();
@@ -216,6 +219,7 @@ class Webuy
 
 			foreach ($json["response"]["data"]["boxes"] as $id => $array)
 			{
+				$array["boxId"] = (string) $array["boxId"];
 				$a_boxes[$array["boxId"]] = new box($array["boxId"],
 				                                    $array["boxName"],
 				                                    $array["categoryId"],
@@ -266,7 +270,7 @@ class Webuy
 		               $array["ecomQuantityOnHand"]);
 	}
 
-	/** @return array<String, array<Object>> **/
+	/** @return array<string, array<string, string|int>> **/
 	public function getStores(string $country, string $boxId) : ?array
 	{
 		// Supported countries
@@ -301,11 +305,13 @@ class Webuy
 
 			foreach ($a_stores as $store)
 			{
+				$store["storeName"] = (string) $store["storeName"];
+
 				// Already on array
 				if (isset($ret[$store["storeName"]]))
 					continue;
 
-				$ret[(string) $store["storeName"]] = array(
+				$ret[$store["storeName"]] = array(
 					"storeId" => $store["storeId"],
 					"storeName" => $store["storeName"],
 					"quantityOnHand" => $store["quantityOnHand"]
