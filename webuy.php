@@ -37,6 +37,12 @@ class Webuy
 	/** @return array<string, string|int> **/
 	public function curlURL(string $url) : ?array
 	{
+		if (strlen($url) < 1)
+		{
+			if ($this->debug) throw new Exception("Debug: Null result");
+			return null;
+		}
+
 		// Return result as raw output
 		curl_setopt($this->cr, CURLOPT_RETURNTRANSFER, true);
 		// Point cURL resource to the URL
